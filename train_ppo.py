@@ -21,20 +21,20 @@ if __name__ == "__main__":
 
     num_episode = cfg.n_episode
 
-    model_dir = './output/model/' if not cfg.use_vessl else '/output/model/'
+    model_dir = './output/5_5_5e-4_Adam/model/' if not cfg.use_vessl else '/output/model/'
     if not os.path.exists(model_dir):
         os.makedirs(model_dir)
 
-    simulation_dir = './output/simulation/' if not cfg.use_vessl else '/output/simulation/'
+    simulation_dir = './output/5_5_5e-4_Adam/simulation/' if not cfg.use_vessl else '/output/simulation/'
     if not os.path.exists(simulation_dir):
         os.makedirs(simulation_dir)
 
-    log_dir = './output/log/' if not cfg.use_vessl else '/output/log/'
+    log_dir = './output/5_5_5e-4_Adam/log/' if not cfg.use_vessl else '/output/log/'
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
 
     env = PMSP(num_job=num_job, num_m=num_m, reward_weight=[weight_tard, weight_setup])
-    agent = PPO(cfg, env.state_dim, env.action_dim).to(device)
+    agent = PPO(cfg, env.state_dim, env.action_dim, lr=0.0005).to(device)
 
     if cfg.load_model:
         checkpoint = torch.load('./trained_model/episode-30000.pt')
