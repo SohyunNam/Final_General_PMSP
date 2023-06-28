@@ -55,7 +55,7 @@ if __name__ == "__main__":
             os.makedirs(log_dir)
 
         env = PMSP(num_job=num_job, num_m=num_m, reward_weight=[weight_tard, weight_setup], rule_weight=rule_weight[num_job])
-        agent = PPO(cfg, env.state_dim, env.action_dim, lr=0.0005, eps_clip=eps_clip, optimizer_name=optim).to(device)
+        agent = PPO(cfg, env.state_dim, env.action_dim, eps_clip=eps_clip, optimizer_name=optim).to(device)
 
         if cfg.load_model:
             checkpoint = torch.load('./trained_model/episode-30000.pt')
