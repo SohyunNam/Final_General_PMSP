@@ -17,7 +17,7 @@ class PMSP:
         self.pt_var = pt_var
         self.is_train = is_train
 
-        self.state_dim = 2 * num_m + 8
+        self.state_dim = 14 + num_m * 8
         self.action_dim = 4
 
         self.mapping = {0: "SSPT", 1: "ATCS", 2: "MDD", 3: "COVERT"}
@@ -92,7 +92,6 @@ class PMSP:
 
         for m in range(self.num_m):
             machine_name = "Machine {0}".format(m)
-            setup = random.randint(0, 5)  # initial setup
             model[machine_name] = Process(env, machine_name, routing, sink, monitor, pt_var=self.pt_var)
             model[machine_name].reset()
 
@@ -120,45 +119,30 @@ class PMSP:
         return self._get_state()
 
     def _get_state(self):
-        f_1 = np.zeros(self.num_m)  # Setup -> 현재 라인의 셋업 값과 같은 셋업인 job의 수
-        f_2 = np.zeros(4)  # Due Date -> Tardiness level for non-setup
-        f_3 = np.zeros(4)  # Due Date -> Tardiness level for setup
-        f_4 = np.zeros(self.num_m)  # General Info -> 각 라인의 progress rate
+        f_1 = np.zeros(4)  # tardiness level of jobs in rouitng.queue
+        f_2 = np.zeros(3)  # tightness level min, avg, max
+        f_3 = np.zeros(2)  # routing을 요청한 경우 해당 machine의 셋업값, queue에 있는 job 중 해당 셋업값과 같은 셋업값을 갖는 job의 수
+        f_4 = np.zeros(self.num_m)  # 각 machine의 셋업 상태
+        f_5 = np.zeros(
+            [self.num_m, 6])  # machine 별 각 셋업값을 가지는 job의 비율(routing.queue에 있는 job들 중에서) / 가능한 셋업 경우의 수 : 0~5, 6가지
+        f_6 = np.zeros(1)  # completion rate
+        f_7 = np.zeros(self.num_m)  # 각 machine에서의 progress rate
+        f_8 = np.zeros(2)  # tardiness level index (x, v)
+        f_9 = np.zeros(2)  # setup index (x, v)
 
         input_queue = copy.deepcopy(list(self.routing.queue.items))
-        for line_num in range(self.num_m):
-            line = self.model["Machine {0}".format(line_num)]
-            same_setup_list = [1 for job in input_queue if job.feature == line.setup]
-            f_1[line_num] = np.sum(same_setup_list) / len(input_queue) if len(input_queue) > 0 else 0.0
-
-            if line.job is not None and not line.idle:  # 현재 작업 중인 job이 있을 때
-                f_4[line_num] = (line.expected_finish_time - self.sim_env.now) / (
-                            line.expected_finish_time - line.start_time)
-
-        # feature 2, 3
-        calling_line = self.model[self.routing.machine]
-        setting = calling_line.setup
-
-        non_setup_list = list()
-        setup_list = list()
-
-        if len(input_queue)> 0:
-            for job in input_queue:
-                if job.feature == setting:
-                    non_setup_list.append(job)
-                else:
-                    setup_list.append(job)
-
-        if len(non_setup_list) > 0:
+        tt_list = list()
+        if len(input_queue) > 0:
             g_1 = 0
             g_2 = 0
             g_3 = 0
             g_4 = 0
 
-            for non_setup_job in non_setup_list:
-                job_dd = non_setup_job.due_date
-                max_tightness = job_dd - (1 + self.pt_var) * non_setup_job.processing_time - self.sim_env.now
-                min_tightness = job_dd - (1 - self.pt_var) * non_setup_job.processing_time - self.sim_env.now
+            for job in input_queue:
+                job_dd = job.due_date
+                max_tightness = job_dd - (1 + self.pt_var) * job.processing_time - self.sim_env.now
+                min_tightness = job_dd - (1 - self.pt_var) * job.processing_time - self.sim_env.now
+                tt_list.append(job_dd - job.processing_time - self.sim_env.now)
 
                 if max_tightness > 0:
                     g_1 += 1
@@ -171,39 +155,54 @@ class PMSP:
                 else:
                     print(0)
 
-            f_2[0] = g_1 / len(non_setup_list)
-            f_2[1] = g_2 / len(non_setup_list)
-            f_2[2] = g_3 / len(non_setup_list)
-            f_2[3] = g_4 / len(non_setup_list)
+            f_1[0] = g_1 / len(input_queue)
+            f_1[1] = g_2 / len(input_queue)
+            f_1[2] = g_3 / len(input_queue)
+            f_1[3] = g_4 / len(input_queue)
 
-        if len(setup_list) > 0:
-            g_1 = 0
-            g_2 = 0
-            g_3 = 0
-            g_4 = 0
+        f_2[0] = np.min(tt_list) if len(tt_list) > 0 else 0.0
+        f_2[1] = np.mean(tt_list) if len(tt_list) > 0 else 0.0
+        f_2[2] = np.max(tt_list) if len(tt_list) > 0 else 0.0
 
-            for setup_job in setup_list:
-                job_dd = setup_job.due_date
-                max_tightness = job_dd - (1 + self.pt_var) * setup_job.processing_time - self.sim_env.now
-                min_tightness = job_dd - (1 - self.pt_var) * setup_job.processing_time - self.sim_env.now
+        calling_line = self.model[self.routing.machine]
+        setting = calling_line.setup
+        f_3[0] = setting / 5
 
-                if max_tightness > 0:
-                    g_1 += 1
-                elif max_tightness <= 0 and min_tightness > 0:
-                    g_2 += 1
-                elif min_tightness < 0 and self.sim_env.now > job_dd:
-                    g_3 += 1
-                elif self.sim_env.now < job_dd:
-                    g_4 += 1
-                else:
-                    print(0)
+        same_feature = 0
+        for job in input_queue:
+            if job.feature == setting:
+                same_feature += 1
+        f_3[1] = same_feature / len(input_queue) if len(input_queue) > 0 else 0.0
 
-            f_3[0] = g_1 / len(setup_list)
-            f_3[1] = g_2 / len(setup_list)
-            f_3[2] = g_3 / len(setup_list)
-            f_3[3] = g_4 / len(setup_list)
+        for i in range(self.num_m):
+            line = self.model["Machine {0}".format(i)]
+            line_setup = line.setup
+            f_4[i] = line_setup / 5
 
-        state = np.concatenate((f_1, f_2, f_3, f_4), axis=None)
+            for job in input_queue:
+                setup_time = abs(job.feature - line_setup)
+                f_5[i, setup_time] += 1 / len(input_queue)
+
+            f_7[i] = (self.sim_env.now - line.start_time) / (line.expected_finish_time - line.start_time) if line.job is not None else 0.0
+
+        f_6[0] = self.sink.completed / self.num_job
+
+        if self.sim_env.now > 0:
+            self.time_list.append(self.sim_env.now)
+            setup_ratio = self.monitor.setup / self.routing.created if self.routing.created else 0.0
+            self.setup_list.append(setup_ratio)
+            self.tardiness_list.append(self.monitor.tardiness / self.sim_env.now)
+
+        f_8[0] = self.setup_list[-1] if len(self.setup_list) else 0.0
+        f_9[0] = self.tardiness_list[-1] if len(self.tardiness_list) else 0.0
+        if len(self.time_list) > 1:
+            v_setup = (self.setup_list[-1] - self.setup_list[-2]) / (self.time_list[-1] - self.time_list[-2])
+            f_8[1] = 1 / (1 + np.exp(-v_setup))
+            v_tard = (self.tardiness_list[-1] - self.tardiness_list[-2]) / (
+                    self.time_list[-1] - self.time_list[-2])
+            f_9[1] = 1 / (1 + np.exp(-v_tard))
+
+        state = np.concatenate((f_1, f_2, f_3, f_4, f_5, f_6, f_7, f_8, f_9), axis=None)
         return state
 
     def _calculate_reward(self):

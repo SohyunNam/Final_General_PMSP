@@ -107,6 +107,7 @@ class Routing:
             else:
                 next_job = None
 
+            self.created += 1
             self.setup = abs(next_job.feature - self.model[self.machine].setup)
             self.monitor.record(time=self.env.now, job=next_job.name, event="Move to Machine", class_name=self.name,
                                 queue=len(self.queue.items), memo=self.setup)

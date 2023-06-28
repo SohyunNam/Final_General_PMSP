@@ -4,6 +4,7 @@ import argparse
 def get_cfg():
     parser = argparse.ArgumentParser()
 
+    parser.add_argument("--env", type=str, default="OE", help="OE | EE")
     parser.add_argument("--use_vessl", type=bool, default=False, help="whether using vessl or not")
     parser.add_argument("--load_model", type=bool, default=False, help="load the trained model")
     parser.add_argument("--model_path", type=str, default=None, help="model file path")
