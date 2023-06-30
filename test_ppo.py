@@ -5,8 +5,8 @@ from agent.ppo import *
 from environment.test_env import *
 from cfg import *
 
-torch.manual_seed(42)
-random.seed(42)
+# torch.manual_seed(42)
+# random.seed(42)
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
 if __name__ == "__main__":
@@ -49,6 +49,11 @@ if __name__ == "__main__":
                     output_dict[test_i] = dict()
                     test_data = sample_data[test_i]
                     for model in trained_model:
+
+                        torch.manual_seed(42)
+                        random.seed(42)
+                        np.random.seed(42)
+
                         print(
                             "{0} | {1} | {2} | Test {3} | Model = {4}".format(num_job, round(ddt, 1), round(pt_var, 1),
                                                                               test_i, model))
