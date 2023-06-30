@@ -3,17 +3,16 @@ import numpy as np
 import pandas as pd
 from environment.test_simulation import *
 
-atcs_k1 = 3.5
-atcs_k2 = 1.4
-covert_k = 7.6
-weight = {"ATCS": [atcs_k1, atcs_k2], "COVERT": covert_k}
+rule_weight = {100: {"ATCS": [2.730, 1.153], "COVERT": 6.8},
+               200: {"ATCS": [3.519, 1.252], "COVERT": 4.4},
+               400: {"ATCS": [3.338, 1.209], "COVERT": 3.9}}
 
 
 def test(num_job=200, num_m=5, ddt=None, sample_data=None, routing_rule=None, file_path=None, pt_var=None):
     tard_list = list()
     setup_list = list()
-    makespan_list = list()
-    for episode in range(20):
+
+    for episode in range(50):
         iat = 15 / num_m
         model = dict()
         env = simpy.Environment()
@@ -26,7 +25,7 @@ def test(num_job=200, num_m=5, ddt=None, sample_data=None, routing_rule=None, fi
             feature = random.randint(0, 5) if sample_data is None else sample_data['feature'][j]
             job_list.append(Job(name=job_name, processing_time=processing_time, feature=feature))
 
-        routing = Routing(env, model, monitor, end_num=num_job, routing_rule=routing_rule, weight=weight)
+        routing = Routing(env, model, monitor, end_num=num_job, routing_rule=routing_rule, weight=rule_weight[num_job])
         routing.reset()
         sink = Sink(env, monitor)
         sink.reset()
@@ -38,18 +37,15 @@ def test(num_job=200, num_m=5, ddt=None, sample_data=None, routing_rule=None, fi
             model[machine_name].reset()
 
         env.run()
-        monitor.get_logs(file_path=file_path + '/log_{0}_{1}.csv'.format(round(ddt, 1), episode))
+        monitor.get_logs(file_path=file_path + '{0}_{1}_{2}.csv'.format(round(ddt, 1), round(pt_var, 1), episode))
 
         tard_list.append(monitor.tardiness / num_job)
         setup_list.append(monitor.setup / num_job)
-        makespan_list.append(sink.makespan)
 
     avg_tardiness = np.mean(tard_list)
     avg_setup = np.mean(setup_list)
-    avg_makespan = np.mean(makespan_list)
 
-    return avg_tardiness, avg_setup, avg_makespan
-
+    return avg_tardiness, avg_setup
 
 if __name__ == "__main__":
     rule_list = ["SSPT", "ATCS", "MDD", "COVERT"]
