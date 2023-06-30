@@ -98,7 +98,7 @@ if __name__ == "__main__":
                         break
                 agent.train_net()
 
-            if episode % 100 == 0 or episode == 1:
+            if episode % 1000 == 0 or episode == 1:
                 # _ = env.get_logs(simulation_dir + "log_{0}.csv".format(episode))
                 agent.save(episode, model_dir)
                 if cfg.use_vessl:
