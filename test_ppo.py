@@ -25,10 +25,10 @@ if __name__ == "__main__":
               200: {"ATCS": [3.519, 1.252], "COVERT": 4.4},
               400: {"ATCS": [3.338, 1.209], "COVERT": 3.9}}
     trained_model = list()
-    for rw in ["0_1", "1_0", "5_5", "6_4", "7_3", "8_2", "9_1"]:
-        for optim in ["Adam", "AH"]:
-            trained_model.append("{0}_{1}".format(rw, optim))
-    trained_model += ["SSPT", "ATCS", "MDD", "COVERT"]
+    for rw in ["0_1", "1_0", "1_9", "2_8", "3_7", "4_6", "5_5", "6_4", "7_3", "8_2", "9_1"]:
+        for optim in ["1e-4", "1e-5", "1e-6"]:
+            trained_model.append("{0}_{1}".format(optim, rw))
+    # trained_model += ["SSPT", "ATCS", "MDD", "COVERT"]
     # trained_model = ["SSPT", "ATCS", "MDD", "COVERT"]
     simulation_dir = './output/test_ppo_ep1/simulation' if not cfg.use_vessl else "/output/simulation"
     if not os.path.exists(simulation_dir):
@@ -37,7 +37,7 @@ if __name__ == "__main__":
     for num_job in num_job_list:
         if cfg.use_vessl:
             import vessl
-            vessl.init(organization="sun-eng-dgx", project="Final-General-PMSP", hp=cfg)
+            vessl.init(organization="snu-eng-dgx", project="Final-General-PMSP", hp=cfg)
 
         with open("sample{0}.json".format(num_job), 'r') as f:
             sample_data = json.load(f)
@@ -72,7 +72,7 @@ if __name__ == "__main__":
                                            rule_weight=weight[num_job],
                                            ddt=ddt, pt_var=pt_var, is_train=False)
 
-                                model_path = "./tm/5e-4/{0}_episode-50000.pt".format(model)
+                                model_path = "./tm/EE/{0}_episode-50000.pt".format(model)
                                 agent = PPO(cfg, env.state_dim, env.action_dim).to(device)
                                 checkpoint = torch.load(model_path)
                                 agent.load_state_dict(checkpoint["model_state_dict"])
