@@ -29,7 +29,7 @@ if __name__ == "__main__":
         for optim in ["1e-4", "1e-5", "1e-6"]:
             trained_model.append("{0}_{1}".format(optim, rw))
     trained_model += ["SSPT", "ATCS", "MDD", "COVERT"]
-    trained_model = ["SSPT", "ATCS", "MDD", "COVERT"]
+    # trained_model = ["SSPT", "ATCS", "MDD", "COVERT"]
     simulation_dir = './output/test_ppo_ep1/simulation' if not cfg.use_vessl else "/output/simulation"
     if not os.path.exists(simulation_dir):
         os.makedirs(simulation_dir)
@@ -89,9 +89,9 @@ if __name__ == "__main__":
                                     state = next_state
 
                                     if done:
-                                        log = env.get_logs(
-                                            simulation_dir_rule + '/rl_{0}_episode_{1}_{2}.csv'.format(model, test_i,
-                                                                                                      i))
+                                        # log = env.get_logs(
+                                        #    simulation_dir_rule + '/rl_{0}_episode_{1}_{2}.csv'.format(model, test_i,
+                                        #                                                               i))
                                         tard_list.append(env.monitor.tardiness / env.num_job)
                                         setup_list.append(env.monitor.setup / env.num_job)
                                         break
