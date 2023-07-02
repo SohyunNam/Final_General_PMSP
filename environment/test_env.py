@@ -37,7 +37,7 @@ def test(num_job=200, num_m=5, ddt=None, sample_data=None, routing_rule=None, fi
             model[machine_name].reset()
 
         env.run()
-        # monitor.get_logs(file_path=file_path + '{0}_{1}_{2}.csv'.format(round(ddt, 1), round(pt_var, 1), episode))
+        monitor.get_logs(file_path=file_path + '{0}_{1}_{2}.csv'.format(round(ddt, 1), round(pt_var, 1), episode))
 
         tard_list.append(monitor.tardiness / num_job)
         setup_list.append(monitor.setup / num_job)
